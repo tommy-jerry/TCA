@@ -77,10 +77,12 @@ void CoveringArray::greedyConstraintInitialize() {
 void CoveringArray::produceSatRow(std::vector<unsigned> &newLine, const unsigned encode) {
 	const unsigned strength = specificationFile.getStrenth();
 	const Options &options = specificationFile.getOptions();
+	int candidate_size = options.lastSymbol(options.size()-1)+1;
+
 	const unsigned width = options.size();
 	assert(width == newLine.size());
 
-	InputKnown known;
+	InputKnown known(candidate_size);
 	const std::vector<unsigned> &ranTuple = coverage.getTuple(encode);
 	const std::vector<unsigned> &ranTupleColumns = coverage.getColumns(encode);
 	for (unsigned i = 0; i < strength; ++i) {
@@ -142,10 +144,12 @@ void CoveringArray::produceSatRow(std::vector<unsigned> &newLine, const unsigned
 void CoveringArray::mostGreedySatRow(std::vector<unsigned> &newLine, const unsigned encode) {
 	const unsigned strength = specificationFile.getStrenth();
 	const Options &options = specificationFile.getOptions();
+	int candidate_size = options.lastSymbol(options.size()-1)+1;
+
 	const unsigned width = options.size();
 	assert(width == newLine.size());
 
-	InputKnown known;
+	InputKnown known(candidate_size);
 	const std::vector<unsigned> &ranTuple = coverage.getTuple(encode);
 	const std::vector<unsigned> &ranTupleColumns = coverage.getColumns(encode);
 	for (unsigned i = 0; i < strength; ++i) {
@@ -465,6 +469,8 @@ void CoveringArray::tabuStep() {
 	const unsigned tupleEncode = uncoveredTuples.encode(mersenne.next(uncoveredTuples.size()));
 	const std::vector<unsigned> &tuple = coverage.getTuple(tupleEncode);
 	const std::vector<unsigned> &columns = coverage.getColumns(tupleEncode);
+	const Options &options = specificationFile.getOptions();
+	int candidate_size = options.lastSymbol(options.size()-1)+1;
 	if (mersenne.next(1000) < 1) {
 		replaceRow(mersenne.next(array.size()), tupleEncode);
 		return;
@@ -486,12 +492,14 @@ void CoveringArray::tabuStep() {
 			continue;
 		}
 		unsigned diffOption = specificationFile.getOptions().option(diffVar);
+
 		//Tabu
 		if (entryTabu.isTabu(Entry(lineIndex, diffOption))) {
 			continue;
 		}
+
 		//check if the new assignment will follow the constraints
-		InputKnown known;
+		InputKnown known(candidate_size);
 		for (unsigned i = 0; i < line.size(); ++i) {
 			if (i == diffOption) {
 				known.append(InputTerm(false, diffVar));
@@ -540,7 +548,7 @@ void CoveringArray::tabuStep() {
 			continue;
 		}
 		//check constraint, before tmpScore or after it?
-		InputKnown known;
+		InputKnown known(candidate_size);
 		for (unsigned column = 0, passing = 0; column < line.size(); ++column) {
 			if (passing < tuple.size() && column == columns[passing]) {
 				known.append(InputTerm(false, tuple[passing++]));

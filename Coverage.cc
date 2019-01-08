@@ -23,6 +23,8 @@ void Coverage::initialize(SATSolver &satSovler) {
 	const Options &options = specificationFile.getOptions();
 	const unsigned strength = specificationFile.getStrenth();
 	offsets.resize(pascalTriangle.nCr(options.size(), strength));
+	int candidate_size = options.lastSymbol(options.size()-1)+1;
+
 	unsigned size = 0;
 	unsigned offsetIndex = 0;
 
@@ -38,7 +40,7 @@ void Coverage::initialize(SATSolver &satSovler) {
 			tuple[i] = options.firstSymbol(columns[i]);
 		}
 		tuples.push_back(tuple);
-		InputKnown known;
+		InputKnown known(candidate_size);
 		for (auto var : tuple) {
 			known.append(InputTerm(false, var));
 		}
@@ -55,7 +57,7 @@ void Coverage::initialize(SATSolver &satSovler) {
 			}
 			else {
 				tuples.push_back(tuple);
-				InputKnown known;
+				InputKnown known(candidate_size);
 				for (auto var : tuple) {
 					known.append(InputTerm(false, var));
 				}
