@@ -24,6 +24,7 @@
 #include <vector>
 
 //jkunlin
+#include "./minisat/solver/Solver.H"
 //#include "Array.H"
 //#include "Solver.H"
 
@@ -59,7 +60,7 @@ public:
 class InputClause {
 protected:
   int					maxVariable;
-  std::vector<InputTerm>		literals;
+  vec<Lit>				literals;
 public:
   InputClause();
   //jkunlin
@@ -68,9 +69,9 @@ public:
 //  InputClause(Array<InputTerm>terms);
 //  InputClause(Array<unsigned>symbols);
   virtual ~InputClause();
-  
-  //std::vector<InputTerm>& getlit();
-  void getlit(std::vector<InputTerm>& lits);
+
+  operator vec<Lit>&();
+  operator const vec<Lit>&() const;
 
   int getMaxVariable() const {
     return maxVariable;
@@ -82,27 +83,19 @@ public:
 };
 
 // A partial assignment.
-class InputKnown{
-protected:
-  std::vector<int> appendStack;
-	std::vector<bool> candidate;
-public:
-	InputKnown(int size);
-	void append(InputTerm term);
-  void undoAppend();
-	bool getvalue(int index);
-};
+typedef InputClause InputKnown;
 
 // A solver-wrapping class.
 class SATSolver {
 protected:
 	const bool disable;
   // The miniSAT implementation.
-  std::vector<InputClause> clauses;
+  Solver				solver;
 public:
   SATSolver(bool ds = false) : disable(ds) {}
-  void addClause(const InputClause& clause);
-  bool operator ()( InputKnown& known) ;
+  void reserve(int variables);
+  void addClause(InputClause&clause);
+  bool operator ()(const InputKnown&known);
 };
 
 #endif

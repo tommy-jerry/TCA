@@ -58,8 +58,11 @@ InputClause::InputClause(const std::vector<unsigned> &symbols) : maxVariable(-1)
 
 InputClause::~InputClause() {}
 
-void InputClause::getlit(std::vector<InputTerm>& lits){
-	lits.assign(literals.begin(), literals.end());
+InputClause::operator vec<Lit>&() {
+	return literals;
+}
+InputClause::operator const vec<Lit>&() const {
+	return literals;
 }
 
 void InputClause::clear(){
@@ -72,68 +75,28 @@ void InputClause::append(InputTerm term) {
 	if (variable > maxVariable) {
 		maxVariable = variable;
 	}
-	literals.push_back(term);
+	literals.push(term.isNegated() ? ~Lit(variable) : Lit(variable));
 }
 
 void InputClause::undoAppend() {
-	literals.pop_back();
+	literals.pop();
 }
 
-InputKnown::InputKnown(int size){
-	candidate.reserve(size);
-	for(int i = 0;i<candidate.size();i++)
-		candidate[i] = false;
+void SATSolver::reserve(int variables) {
+	while (variables >= solver.nVars()) {
+		solver.newVar();
+	}
 }
 
-
-void InputKnown::append(InputTerm term){
-	int variable = term.getVariable();
-	appendStack.push_back(variable);
-	if (!term.isNegated()){
-		candidate[variable] = 1;
-	}	
+void SATSolver::addClause(InputClause&clause) {
+	reserve(clause.getMaxVariable());
+	solver.addClause(clause);
 }
 
-void InputKnown::undoAppend(){
-	int variable = appendStack[appendStack.size()-1];
-	candidate[variable] = 0;
-	appendStack.pop_back();
-}
-	
-bool InputKnown::getvalue(int index){
-	return candidate[index];
-}
-
-
-//void SATSolver::addClause(std::vector<InputClause>& newClauses) {
-//	//clauses.assign(clause.begin(), clause.end());
-//	clauses.insert(clauses.end(), newClauses.begin(), newClauses.end());
-//}
-
-void SATSolver::addClause(const InputClause& clause) {
-	//clauses.assign(clause.begin(), clause.end());
-	clauses.push_back(clause);
-}
-
-bool SATSolver::operator()(InputKnown& known) {
+bool SATSolver::operator()(const InputKnown&known) {
 	if (disable) {
 		return true;
 	}
-	for(int i = 0;i<clauses.size();i++){
-		std::vector<InputTerm> lit;
-		clauses[i].getlit(lit);
-		int max_ = lit.size();
-		bool part = false;
-		for(int j = 0;j<max_;j++){
-			
-			bool isnegated = lit[j].isNegated();
-			int variable = lit[j].getVariable();
-			if(!isnegated && known.getvalue(variable))
-				part = true;
-		}
-		if(part == false)
-			return false;
-	}
-	return true;
-	
+	reserve(known.getMaxVariable());
+	return solver.simplify() && solver.solve(known);
 }
