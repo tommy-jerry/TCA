@@ -17,9 +17,9 @@
 #include "CoveringArray.h"
 
 CoveringArray::CoveringArray(const SpecificationFile &specificationFile,
-		const ConstraintFile &constraintFile, unsigned long long maxT, int seed) :
+		const ConstraintFile &constraintFile, unsigned long long maxT, int seed ,int thre):
 	satSolver(constraintFile.isEmpty()), specificationFile(specificationFile),
-	coverage(specificationFile), entryTabu(4),
+	coverage(specificationFile), entryTabu(4), stepIndex(0), 
 	maxTime(maxT) {
 
 		clock_start = clock();
@@ -49,7 +49,7 @@ CoveringArray::CoveringArray(const SpecificationFile &specificationFile,
 
 		coverage.initialize(satSolver);
 		uncoveredTuples.initialize(specificationFile, coverage, true);
-
+		threshlod = thre;
 		mersenne.seed(seed);
 	}
 
@@ -301,8 +301,7 @@ void CoveringArray::mostGreedySatRow(std::vector<unsigned> &newLine, const unsig
 	newLine.assign(assignedVar.begin(), assignedVar.end());
 }
 
-void CoveringArray::randomWalk(const unsigned randomSize)
-{
+void CoveringArray::randomWalk(const unsigned randomSize){
 	unsigned strength = specificationFile.getStrenth();
 	const Options &options = specificationFile.getOptions();
 	const unsigned width = options.size();
@@ -505,7 +504,8 @@ void CoveringArray::removeOneRow() {
 
 void CoveringArray::optimize() {
 	std::vector<std::vector<unsigned>> bestArray; // = array;
-
+	long long bestScoreforNow = coverage.tupleCount() - uncoveredTuples.size();
+	long long tempScore;
 	while (true) {
 		if ((double) (clock() - clock_start) / CLOCKS_PER_SEC > maxTime) {
 			break;
@@ -517,7 +517,14 @@ void CoveringArray::optimize() {
 			removeOneRow();
 		}
 
-        tabuStep();
+        tempScore = tabuStep();
+		if(tempScore > bestScoreforNow)
+		{
+			bestScoreforNow = tempScore;
+			stepIndex = 0;
+		}
+		else stepIndex ++;
+	
 		continue;
 	}
 
@@ -547,14 +554,19 @@ void CoveringArray::optimize() {
 // #endif
 }
 
-void CoveringArray::tabuStep() {
+long long CoveringArray::tabuStep() {
 	const unsigned tupleEncode = uncoveredTuples.encode(mersenne.next(uncoveredTuples.size()));
 	const std::vector<unsigned> &tuple = coverage.getTuple(tupleEncode);
 	const std::vector<unsigned> &columns = coverage.getColumns(tupleEncode);
-	if (mersenne.next(1000) < 1) {
+/*	if (mersenne.next(1000) < 1) {
 		//replaceRow(mersenne.next(array.size()), tupleEncode);
         randomWalk(5);
 		return;
+	}*/
+	if(stepIndex > threshlod){
+		randomWalk(5);
+		stepIndex = 0;
+		return coverage.tupleCount() - uncoveredTuples.size();
 	}
 	std::vector<unsigned> bestRows;
 	std::vector<unsigned> bestVars;
@@ -606,14 +618,14 @@ void CoveringArray::tabuStep() {
 	if (bestRows.size() != 0) {
 		unsigned ran = mersenne.next(bestRows.size());
 		replace(bestVars[ran], bestRows[ran]);
-		return;
+		return coverage.tupleCount() - uncoveredTuples.size();
 	}
 
-	if (mersenne.next(100) < 1) {
+	/*if (mersenne.next(100) < 1) {
 		//replaceRow(mersenne.next(array.size()), tupleEncode);
         randomWalk(5);
 		return;
-	}
+	}*/
 
 	std::vector<unsigned> changedVars;
 	for (unsigned lineIndex = 0; lineIndex < array.size(); ++lineIndex) {
@@ -661,9 +673,10 @@ void CoveringArray::tabuStep() {
 			}
 		}
 		multiVarReplace(changedVars, lineIndex);
-		return;
+		return coverage.tupleCount() - uncoveredTuples.size();
 	}
 	replaceRow(mersenne.next(array.size()), tupleEncode);
+	return coverage.tupleCount() - uncoveredTuples.size();
 }
 
 long long CoveringArray::multiVarRow(const std::vector<unsigned> &sortedMultiVars,

@@ -21,7 +21,7 @@
 
 void localSearch(const SpecificationFile &specificationFile,
 		const ConstraintFile &constraintFile, const unsigned long long maxTime, int seed) {
-	CoveringArray c(specificationFile, constraintFile, maxTime, seed);
+	CoveringArray c(specificationFile, constraintFile, maxTime, seed,1000);
 	c.greedyConstraintInitialize();
 	c.optimize();
 }

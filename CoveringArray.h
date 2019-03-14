@@ -32,7 +32,7 @@
 class CoveringArray {
 public:
 	CoveringArray (const SpecificationFile &specificationFile,
-			const ConstraintFile &constraintFile, unsigned long long maxT, int seed);
+			const ConstraintFile &constraintFile, unsigned long long maxT, int seed, int thre);
 	void greedyConstraintInitialize();
 	void optimize();
 private:
@@ -44,6 +44,8 @@ private:
 	TupleSet uncoveredTuples;
 	std::set<unsigned> varInUncovertuples;
 	Tabu<Entry> entryTabu;
+	unsigned threshlod;
+	unsigned stepIndex;
 
 	unsigned long long maxTime;
 	clock_t clock_start;
@@ -69,7 +71,7 @@ private:
 			const unsigned lineIndex);
 	void multiVarReplace(const std::vector<unsigned> &sortedMultiVars, const unsigned lineIndex);
 
-	void tabuStep();
+	long long tabuStep();
 	void tmpPrint();
 	bool verify(const std::vector<std::vector<unsigned>> &resultArray);
 #ifndef NDEBUG 
