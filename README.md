@@ -3,6 +3,7 @@ TCA: A tool for generating CA for constrained combinatorial interaction testing
 
 compile
 -------
+test
 
 make
 
