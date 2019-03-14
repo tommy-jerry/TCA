@@ -154,11 +154,14 @@ void CoveringArray::mostGreedySatRow(std::vector<unsigned> &newLine, const unsig
 	cover(encode);
 
 	std::vector<std::set<unsigned>> columnSymbols(width);
+
+	//get u(p) of the smallest index p
 	for (unsigned column = 0, passing = 0; column < width; ++column) {
 		if (passing < strength && column == ranTupleColumns[passing]) {
 			passing++;
 			continue;
 		}
+		//this code only be excuted once
 		for (unsigned symbol = options.firstSymbol(column);
 				symbol <= options.lastSymbol(column); ++symbol) {
 			known.append(InputTerm(false, symbol));
@@ -186,6 +189,8 @@ void CoveringArray::mostGreedySatRow(std::vector<unsigned> &newLine, const unsig
 		while (true) {
 			unsigned maxNewCoverCount = 0;
 			std::vector<unsigned> bestVars;
+			//1.1 for p, calculate all possible value, 
+			//		and push best values in bestVars.
 			for (auto var : columnSymbols[column]) {
 				//choose best one
 				std::vector<unsigned> assignedVarTmp(assignedVar.begin(), assignedVar.end());
@@ -216,6 +221,7 @@ void CoveringArray::mostGreedySatRow(std::vector<unsigned> &newLine, const unsig
 					bestVars.push_back(var);
 				}
 			}
+			//1.2 if found no value for p, backtrace
 			if (bestVars.size() == 0) {
 				//backtrack, uncover tuples, undoAppend
 				column--;
@@ -245,7 +251,7 @@ void CoveringArray::mostGreedySatRow(std::vector<unsigned> &newLine, const unsig
 				//undoAppend
 				known.undoAppend();
 			}
-			else {
+			else {//1.3 found best, cuculate u(p) for next p
 				//break tie randomly
 				unsigned ranIndex = mersenne.next(bestVars.size());
 				unsigned tmpVar = bestVars[ranIndex];
@@ -294,6 +300,86 @@ void CoveringArray::mostGreedySatRow(std::vector<unsigned> &newLine, const unsig
 	}
 	newLine.assign(assignedVar.begin(), assignedVar.end());
 }
+
+void CoveringArray::randomWalk(const unsigned randomSize)
+{
+	unsigned strength = specificationFile.getStrenth();
+	const Options &options = specificationFile.getOptions();
+	const unsigned width = options.size();
+	std::vector<unsigned> tmpTuple(strength);
+	int getone = 0;
+	int getnone = 0; 
+	int m_size = randomSize;
+	while (m_size-- > 0 && uncoveredTuples.size() > 0)
+	{
+		unsigned tupleEncode = uncoveredTuples.encode(mersenne.next(uncoveredTuples.size()));
+		const std::vector<unsigned> &ranTuple = coverage.getTuple(tupleEncode);
+		const std::vector<unsigned> &ranTupleColumns = coverage.getColumns(tupleEncode);
+		std::vector<unsigned> validLine(0);
+
+		for (unsigned i = 0; i < array.size(); i++)
+		{
+			std::vector<unsigned> &ranLine = array[i];
+			InputKnown known;
+			for (unsigned column = 0, passing = 0; column < width; ++column)
+			{
+				if (passing < strength && column == ranTupleColumns[passing])
+				{
+					known.append(InputTerm(false, ranTuple[passing]));
+					passing++;
+				}
+				else
+				{
+					known.append(InputTerm(false, ranLine[column]));
+				}
+			}
+			if (satSolver(known))
+			{
+				validLine.push_back(i);
+			}
+		}
+		if (validLine.size() != 0)
+		{
+			getone ++ ;
+			unsigned chosenLineIndex = validLine[mersenne.next(validLine.size())];
+			std::vector<unsigned> &chosenLine = array[chosenLineIndex];
+
+			for (std::vector<unsigned> columns = combinadic.begin(strength);
+				 columns[strength - 1] < width; combinadic.next(columns))
+			{
+				for (unsigned i = 0; i < strength; ++i)
+				{
+					tmpTuple[i] = chosenLine[columns[i]];
+				}
+				uncover(coverage.encode(columns, tmpTuple));
+			}
+
+			for (unsigned i = 0; i < strength; i++)
+			{
+				chosenLine[ranTupleColumns[i]] = ranTuple[i];
+			}
+
+			for (std::vector<unsigned> columns = combinadic.begin(strength);
+				 columns[strength - 1] < width; combinadic.next(columns))
+			{
+				for (unsigned i = 0; i < strength; ++i)
+				{
+					tmpTuple[i] = chosenLine[columns[i]];
+				}
+				cover(coverage.encode(columns, tmpTuple));
+			}
+		}
+		else{
+			getnone ++;
+			replaceRow(mersenne.next(array.size()), tupleEncode);
+		}
+	}
+	//std::cout<<"getone:"<< getone <<"  getnone:"<< getnone <<std::endl;
+	entryTabu.initialize(Entry(array.size(), specificationFile.getOptions().size()));
+}
+
+
+
 
 void CoveringArray::replaceRow(const unsigned lineIndex, const unsigned encode) {
 	std::vector<unsigned> &ranLine = array[lineIndex];
@@ -431,7 +517,7 @@ void CoveringArray::optimize() {
 			removeOneRow();
 		}
 
-		tabuStep();
+        tabuStep();
 		continue;
 	}
 
@@ -466,7 +552,8 @@ void CoveringArray::tabuStep() {
 	const std::vector<unsigned> &tuple = coverage.getTuple(tupleEncode);
 	const std::vector<unsigned> &columns = coverage.getColumns(tupleEncode);
 	if (mersenne.next(1000) < 1) {
-		replaceRow(mersenne.next(array.size()), tupleEncode);
+		//replaceRow(mersenne.next(array.size()), tupleEncode);
+        randomWalk(5);
 		return;
 	}
 	std::vector<unsigned> bestRows;
@@ -523,7 +610,8 @@ void CoveringArray::tabuStep() {
 	}
 
 	if (mersenne.next(100) < 1) {
-		replaceRow(mersenne.next(array.size()), tupleEncode);
+		//replaceRow(mersenne.next(array.size()), tupleEncode);
+        randomWalk(5);
 		return;
 	}
 

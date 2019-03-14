@@ -57,6 +57,7 @@ private:
 	//producing the row AND updating coverage
 	void mostGreedySatRow(std::vector<unsigned> &newLine, const unsigned encode);
 	void replaceRow(const unsigned lineIndex, const unsigned encode);
+	void randomWalk(unsigned random_size);
 	void removeUselessRows();
 	void removeOneRow();
 	long long varScoreOfRow(const unsigned var, const unsigned lineIndex);
