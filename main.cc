@@ -32,17 +32,22 @@ int main(int argc, char const *argv[]) {
 	string constrFile;
 	unsigned long long maxTime;
 	int seed;
-	if (argc == 5) {
+	unsigned tabuSize, randomSize;
+	if (argc == 7) {
 		constrFile = argv[2];
 		maxTime = atoi(argv[3]);
 		seed = atoi(argv[4]);
+		tabuSize = atoi(argv[5]);
+		randomSize = atoi(argv[6]);
 	}
 	else {
 		maxTime = atoi(argv[2]);
 		seed = atoi(argv[3]);
+		tabuSize = atoi(argv[4]);
+		randomSize = atoi(argv[5]);
 	}
 	SpecificationFile specificationFile(modelFile);
 	ConstraintFile constraintFile(constrFile);
-	localSearch(specificationFile, constrFile, maxTime, seed);
+	localSearch(specificationFile, constrFile, maxTime, seed, tabuSize, randomSize);
 	return 0;
 }

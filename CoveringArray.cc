@@ -17,7 +17,7 @@
 #include "CoveringArray.h"
 
 CoveringArray::CoveringArray(const SpecificationFile &specificationFile,
-		const ConstraintFile &constraintFile, unsigned long long maxT, int seed ,int thre):
+		const ConstraintFile &constraintFile, unsigned long long maxT, int seed ,int tabuSize):
 	satSolver(constraintFile.isEmpty()), specificationFile(specificationFile),
 	coverage(specificationFile), entryTabu(4), stepIndex(0), 
 	maxTime(maxT) {
@@ -49,7 +49,7 @@ CoveringArray::CoveringArray(const SpecificationFile &specificationFile,
 
 		coverage.initialize(satSolver);
 		uncoveredTuples.initialize(specificationFile, coverage, true);
-		threshlod = thre;
+		threshlod = tabuSize;
 		mersenne.seed(seed);
 	}
 
@@ -502,7 +502,7 @@ void CoveringArray::removeOneRow() {
 	array.pop_back();
 }
 
-void CoveringArray::optimize() {
+void CoveringArray::optimize(unsigned randomSize) {
 	std::vector<std::vector<unsigned>> bestArray; // = array;
 	long long bestScoreforNow = coverage.tupleCount() - uncoveredTuples.size();
 	long long tempScore;
@@ -517,7 +517,7 @@ void CoveringArray::optimize() {
 			removeOneRow();
 		}
 
-        tempScore = tabuStep();
+        tempScore = tabuStep(randomSize);
 		if(tempScore > bestScoreforNow)
 		{
 			bestScoreforNow = tempScore;
@@ -554,17 +554,17 @@ void CoveringArray::optimize() {
 // #endif
 }
 
-long long CoveringArray::tabuStep() {
+long long CoveringArray::tabuStep(unsigned randomSize) {
 	const unsigned tupleEncode = uncoveredTuples.encode(mersenne.next(uncoveredTuples.size()));
 	const std::vector<unsigned> &tuple = coverage.getTuple(tupleEncode);
 	const std::vector<unsigned> &columns = coverage.getColumns(tupleEncode);
 /*	if (mersenne.next(1000) < 1) {
 		//replaceRow(mersenne.next(array.size()), tupleEncode);
-        randomWalk(5);
+        randomWalk(randomSize);
 		return;
 	}*/
 	if(stepIndex > threshlod){
-		randomWalk(5);
+		randomWalk(randomSize);
 		stepIndex = 0;
 		return coverage.tupleCount() - uncoveredTuples.size();
 	}
@@ -623,7 +623,7 @@ long long CoveringArray::tabuStep() {
 
 	/*if (mersenne.next(100) < 1) {
 		//replaceRow(mersenne.next(array.size()), tupleEncode);
-        randomWalk(5);
+        randomWalk(randomSize);
 		return;
 	}*/
 
