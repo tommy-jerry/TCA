@@ -20,8 +20,8 @@
 #include "CoveringArray.h"
 
 void localSearch(const SpecificationFile &specificationFile,
-		const ConstraintFile &constraintFile, const unsigned long long maxTime, int seed, unsigned tabuSize, unsigned randomSize) {
-	CoveringArray c(specificationFile, constraintFile, maxTime, seed, tabuSize);
+		const ConstraintFile &constraintFile, const unsigned long long maxTime, int seed, /*unsigned tabuSize, */unsigned tabustepSize, unsigned randomSize) {
+	CoveringArray c(specificationFile, constraintFile, maxTime, seed, /*tabuSize*/tabustepSize);
 	c.greedyConstraintInitialize();
-	c.optimize(randomSize);
+	c.optimize(randomSize, tabustepSize);
 }

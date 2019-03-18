@@ -34,7 +34,7 @@ public:
 	CoveringArray (const SpecificationFile &specificationFile,
 			const ConstraintFile &constraintFile, unsigned long long maxT, int seed, int thre);
 	void greedyConstraintInitialize();
-	void optimize(unsigned randomSize);
+	void optimize(unsigned randomSize, unsigned tabustepSize);
 private:
 	SATSolver satSolver;
 	Mersenne mersenne;
@@ -71,7 +71,7 @@ private:
 			const unsigned lineIndex);
 	void multiVarReplace(const std::vector<unsigned> &sortedMultiVars, const unsigned lineIndex);
 
-	long long tabuStep(unsigned randomSize);
+	bool tabuStep(unsigned randomSize);
 	void tmpPrint();
 	bool verify(const std::vector<std::vector<unsigned>> &resultArray);
 #ifndef NDEBUG 
